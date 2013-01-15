@@ -1,6 +1,6 @@
 webRCX.js
 ======================
-  webRCX.js can sent LEGO&reg; Mindstorms&reg; RCX IR command width IR LEDs in earphone jack.
+  webRCX.js can send LEGO® Mindstorms® RCX IR command with IR LEDs in earphone jack.
 
 Demo
 ----------
