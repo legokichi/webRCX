@@ -1,36 +1,48 @@
 this.webRCX = do ->
 
+  console.log "testing..."
+
   opcodesToPackets = (opcodes)->
-    packets = []
-    packets[0] = 0x55 # header
-    packets[1] = 0xff
-    packets[2] = 0x00
-    sum = 0
-    i = 3
-    for opcode,j in opcodes
-      packets[i++] = opcode
-      packets[i++] = ~opcode & 0xff
-      sum += opcode
-    packets[i++] = sum & 0xff
-    packets[i++] = ~sum & 0xff
-    packets
+    commands = opcodes
+      .map((_)-> [_ & 0xff, ~_ & 0xff])
+      .reduce (rslts, [a, b])-> rslts.concat(a, b)
+    sum = opcodes
+      .reduce (rslt, _)-> (rslt + _) & 0xff
+
+    [
+      0x55 # leader
+      0xff # header
+      0x00 # ~header
+    ].concat commands, [sum & 0xff, ~sum & 0xff]
+
+  console.assert(
+    opcodesToPackets([12, 255]).every (v, i)->
+      v is [85, 255, 0, 12, 243, 255, 0, 11, 244][i])
+
 
   packetsToBitEncoding = (packets)->
-    bits = []
-    for packet in packets
-      bits.push 1 # start bit
-      byte = []
-      byteStr = packet.toString(2)
-      for bitStr in byteStr
-        byte.push Number bitStr
+    packets.map (packet)->
+      byte = (Number v for v in packet.toString(2))
       while byte.length <8
         byte.unshift 0
-      bits = bits.concat byte
-      sum = byte.reduce (a,b)-> a+b
-      parity = if sum%2 is 0 then 1 else 0
-      bits.push parity # odd parity
-      bits.push 1 # stop bit
-    bits
+      sum = byte.reduce (a, b)-> a + b
+      parity = if sum % 2 is 0 then 1 else 0
+      [
+        1 # start bit
+      ].concat byte, [
+        parity # odd parity bit
+        1 # stop bit
+      ]
+
+  console.assert(
+    packetsToBitEncoding(
+      opcodesToPackets([255, 254]))
+    [0].every (v, i)->
+      v is [1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1][i])
+
+
+  console.log "ok."
+
 
   bitEncodingToPCMAry = do ->
     L = (t)-> 0xFFFF*( Math.sin(2*Math.PI*19200*t)+1)
@@ -65,6 +77,10 @@ this.webRCX = do ->
         bytesPerSample: 2
         data:      rawPCM
       ,(waveBuffer)->
+        console.dir waveBuffer
+        blob = new Blob(waveBuffer, {type: "data:audio/wav"})
+        url = URL.createObjectURL(blob);
+        console.log url
         audio = document.createElement('audio')
         audio.src = 'data:audio/wav;base64,' + btoa waveBuffer
         audio.play()

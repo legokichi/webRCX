@@ -98,13 +98,17 @@
         bits = packetsToBitEncoding(packets);
         pcmAry = bitEncodingToPCMAry(bits);
         rawPCM = new Uint16Array(pcmAry);
+        console.dir(rawPCM);
+        blob = new Blob(rawPCM, {type: "data:audio/wav"});
+        url = URL.createObjectURL(blob);
+        console.log(url);
         return PCMData.encode({
           sampleRate: 44100,
           channelCount: 2,
           bytesPerSample: 2,
           data: rawPCM
         }, function(waveBuffer) {
-          var audio;
+          var audio, blob, url;
           audio = document.createElement('audio');
           audio.src = 'data:audio/wav;base64,' + btoa(waveBuffer);
           return audio.play();
@@ -112,5 +116,4 @@
       }
     };
   })();
-
 }).call(this);
